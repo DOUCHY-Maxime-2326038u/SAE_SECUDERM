@@ -315,6 +315,7 @@
   "addImg" : {
     "title": "Add an image",
     "nameInput": "Image name",
+    "cameraBtn": "Take a photo",
     "chooseBtn": "Choose an image",
     "addBtn" : "Save the image",
     "toast": {

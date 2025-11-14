@@ -7,7 +7,8 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View
+  View,
+  Alert
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import ReturnButton from "@/components/ReturnButton";
@@ -20,6 +21,7 @@ import {useAppDispatch, useAppSelector} from "@/store/hooks";
 import {uploadFile} from "@/store/fileThunks";
 import {selectUploadStatus} from "@/store/file";
 import i18n from "@/languages/language-config";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 const { width, height } = Dimensions.get("window");
 
@@ -50,6 +52,26 @@ export default function AddImageScreen() {
 
     // Ouvre la galerie
     const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: "images",
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setSelectedImage(result.assets[0].uri);
+    }
+  };
+
+  const takePhoto = async () => {
+    // Demande la permission pour accéder à la caméra
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Permission d\'accès à la caméra requise.');
+      return;
+    }
+
+    // Ouvre la caméra
+    const result = await ImagePicker.launchCameraAsync({
       mediaTypes: "images",
       allowsEditing: true,
       quality: 1,
@@ -110,9 +132,16 @@ export default function AddImageScreen() {
           </View>
           <View style={styles.imageContainer}>
             {selectedImage && <Image source={{ uri: selectedImage }} style={styles.image}/>}
-            <TouchableOpacity style={styles.chooseButton} onPress={pickImage}>
-              <ThemedText>{i18n.t('addImg.chooseBtn')}</ThemedText>
-            </TouchableOpacity>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity style={[styles.chooseButton, styles.cameraButton]} onPress={takePhoto}>
+                <MaterialCommunityIcons name="camera" size={24} color="white" style={styles.buttonIcon} />
+                <ThemedText style={styles.buttonText}>{i18n.t('addImg.cameraBtn') || 'Caméra'}</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.chooseButton, styles.galleryButton]} onPress={pickImage}>
+                <MaterialCommunityIcons name="image" size={24} color="white" style={styles.buttonIcon} />
+                <ThemedText style={styles.buttonText}>{i18n.t('addImg.chooseBtn')}</ThemedText>
+              </TouchableOpacity>
+            </View>
           </View>
           <View style={styles.formButtons}>
             <TouchableOpacity style={styles.button} onPress={handleSaveImage}>
@@ -178,6 +207,26 @@ const sharedStyles = {
   imageContainer:{
     marginVertical: height * 0.02,
     alignItems: "center" as "center"
+  },
+  buttonContainer: {
+    flexDirection: "row" as "row",
+    justifyContent: "center" as "center",
+    gap: 15,
+    marginTop: height * 0.02,
+  },
+  cameraButton: {
+    flex: 1,
+    maxWidth: width * 0.35,
+  },
+  galleryButton: {
+    flex: 1,
+    maxWidth: width * 0.35,
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  buttonText: {
+    fontSize: 14,
   }
 };
 
