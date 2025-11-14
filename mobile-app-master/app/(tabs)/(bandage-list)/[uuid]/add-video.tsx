@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dimensions,
   Keyboard,
@@ -17,6 +17,9 @@ import {useColorScheme} from "@/hooks/useColorScheme";
 import {useToast} from "@/hooks/useToast";
 import ReturnButton from "@/components/ReturnButton";
 import i18n from "@/languages/language-config";
+import {useAppDispatch, useAppSelector} from "@/store/hooks";
+import {uploadFile} from "@/store/fileThunks";
+import {selectUploadStatus} from "@/store/file";
 
 const { width, height } = Dimensions.get("window");
 
@@ -33,6 +36,8 @@ export default function AddVideoScreen() {
   const [inputHeight, setInputHeight] = useState(40);
 
   const { showToast } = useToast();
+  const dispatch = useAppDispatch();
+  const fileUploadStatus = useAppSelector(selectUploadStatus);
 
   const pickVideo = async () => {
     player.pause()
@@ -68,11 +73,21 @@ export default function AddVideoScreen() {
       router.back();
       return;
     }
-    const paylod = {label : text, uri : videoUrl};
-    console.log(paylod);
-    showToast("success", i18n.t('toastStatus.success'), i18n.t('addVideo.toast.success'));
+    
+    const treatmentPlaceId = uuid as string;
+    
+    // Upload the video file
+    dispatch(uploadFile({ file: videoUrl, treatmentPlaceId }));
     router.back();
   };
+
+  useEffect(() => {
+    if (fileUploadStatus === "succeeded") {
+      showToast("success", i18n.t('toastStatus.success'), i18n.t('addVideo.toast.success'));
+    } else if (fileUploadStatus === "failed") {
+      showToast("error", i18n.t('toastStatus.error'), i18n.t('addVideo.toast.error'));
+    }
+  }, [fileUploadStatus]);
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>

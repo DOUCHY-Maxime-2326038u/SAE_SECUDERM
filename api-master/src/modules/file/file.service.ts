@@ -19,7 +19,14 @@ export class FileService {
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
     });
     this.bucketName = process.env.AWS_S3_BUCKET_NAME;
-    this.ensureBucketSecurity(); // Vérifier la sécurité du bucket au démarrage
+    // Only run security check in production with real AWS credentials
+    if (
+      process.env.NODE_ENV === 'production' &&
+      process.env.AWS_ACCESS_KEY_ID &&
+      !process.env.AWS_ACCESS_KEY_ID.includes('test')
+    ) {
+      this.ensureBucketSecurity();
+    }
   }
 
   async uploadFile(
@@ -43,6 +50,11 @@ export class FileService {
       'application/pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'video/mp4',
+      'video/quicktime',
+      'video/x-msvideo',
+      'video/x-matroska',
+      'video/webm',
     ];
     if (!allowedMimeTypes.includes(file.mimetype)) {
       throw new Error('Type de fichier non autorisé');
