@@ -7,6 +7,7 @@ import {
   View,
   Image,
   Modal,
+  Platform,
   } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { useVideoPlayer, VideoPlayer, VideoView } from 'expo-video';
@@ -49,7 +50,15 @@ const MediaItem = (props: MediaItemProps) => {
     player.pause();
   };
 
-  const playerModal = useVideoPlayer(props.uri);
+  // Optimized video player configuration for iOS and Android
+  const playerModal = useVideoPlayer(props.uri, (player) => {
+    player.loop = false;
+    player.muted = false;
+    // iOS specific: Use async loading
+    if (Platform.OS === 'ios') {
+      player.staysActiveInBackground = false;
+    }
+  });
 
   const handleOpenDeleteModal = () => {
     setIsDeleteModalVisible(true);
@@ -83,6 +92,8 @@ const MediaItem = (props: MediaItemProps) => {
             player={playerModal}
             style={styles.video}
             pointerEvents="none"
+            nativeControls={false}
+            {...(Platform.OS === 'ios' && { useNativeControls: false })}
           />
         ) : (
           <Image source={{ uri: props.uri }} style={styles.image} />
@@ -114,6 +125,8 @@ const MediaItem = (props: MediaItemProps) => {
               <VideoView
                 player={playerModal}
                 style={styles.modalVideo}
+                nativeControls={true}
+                {...(Platform.OS === 'android' && { useNativeControls: true })}
               />
             ) : (
               <Image source={{ uri: props.uri }} style={styles.modalImage} />
