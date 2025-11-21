@@ -34,55 +34,73 @@ export class FileService {
     currentUser: User,
     treatmentPlaceId: string,
   ): Promise<File> {
-    const sanitizedFilename = file.originalname
-      .replace(/[^a-zA-Z0-9.-]/g, '_')
-      .replace(/\.{2,}/g, '.');
-    const maxFileSize = 10 * 1024 * 1024;
-    if (file.size > maxFileSize) {
-      throw new Error(
-        'La taille du fichier dépasse la limite autorisée (10 Mo)',
-      );
+    try {
+      console.log('File service upload started:', { fileName: file.originalname, size: file.size });
+
+      const sanitizedFilename = file.originalname
+        .replace(/[^a-zA-Z0-9.-]/g, '_')
+        .replace(/\.{2,}/g, '.');
+
+      // 100 MB limit for videos, 10 MB for images
+      const maxFileSize = 100 * 1024 * 1024;
+      if (file.size > maxFileSize) {
+        throw new Error(
+          `La taille du fichier dépasse la limite autorisée (${maxFileSize / (1024 * 1024)} Mo). Fichier: ${file.size / (1024 * 1024)} Mo`,
+        );
+      }
+
+      const allowedMimeTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'video/mp4',
+        'video/quicktime',
+        'video/x-msvideo',
+        'video/x-matroska',
+        'video/webm',
+      ];
+
+      console.log('File mimetype check:', { received: file.mimetype, allowed: allowedMimeTypes });
+
+      if (!allowedMimeTypes.includes(file.mimetype)) {
+        throw new Error(`Type de fichier non autorisé: ${file.mimetype}`);
+      }
+
+      const uploadParams = {
+        Bucket: this.bucketName,
+        Key: `uploads/${Date.now()}-${sanitizedFilename}`,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      };
+
+      console.log('S3 upload starting:', { bucket: this.bucketName, key: uploadParams.Key });
+
+      const result = await this.s3.upload(uploadParams).promise();
+
+      console.log('S3 upload success:', { location: result.Location });
+
+      const newFile = await this.fileModel.create({
+        original_name: sanitizedFilename,
+        file_name: uploadParams.Key,
+        file_url: result.Location,
+        mime_type: file.mimetype,
+        size: file.size,
+        uploaded_by: currentUser.id,
+        treatment_place_id: treatmentPlaceId,
+      });
+
+      newFile.file_url = await this.getFileUrl(newFile.file_name);
+
+      console.log('File record created:', { id: newFile.id });
+
+      return newFile;
+    } catch (error) {
+      console.error('File upload service error:', error);
+      throw error;
     }
-    const allowedMimeTypes = [
-      'image/jpeg',
-      'image/png',
-      'image/gif',
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'video/mp4',
-      'video/quicktime',
-      'video/x-msvideo',
-      'video/x-matroska',
-      'video/webm',
-    ];
-    if (!allowedMimeTypes.includes(file.mimetype)) {
-      throw new Error('Type de fichier non autorisé');
-    }
-    const uploadParams = {
-      Bucket: this.bucketName,
-      Key: `uploads/${Date.now()}-${sanitizedFilename}`,
-      Body: file.buffer,
-      ContentType: file.mimetype,
-    };
-
-    // Загружаем файл в S3
-    const result = await this.s3.upload(uploadParams).promise();
-
-    // Сохраняем метаданные в базе данных
-    const newFile = await this.fileModel.create({
-      original_name: sanitizedFilename,
-      file_name: uploadParams.Key,
-      file_url: result.Location,
-      mime_type: file.mimetype,
-      size: file.size,
-      uploaded_by: currentUser.id,
-      treatment_place_id: treatmentPlaceId,
-    });
-
-    newFile.file_url = await this.getFileUrl(newFile.file_name);
-
-    return newFile;
   }
 
   // Получение файла по ID
