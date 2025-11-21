@@ -48,6 +48,7 @@ export const uploadFile = createAsyncThunk(
         type: mimeType,
       } as any);
 
+      // Add treatment_place_id as a string field, not as part of the file object
       formData.append('treatment_place_id', treatmentPlaceId);
 
       const response = await api.post('/file/upload', formData, {
@@ -58,7 +59,11 @@ export const uploadFile = createAsyncThunk(
 
       return response.data.file;
     } catch (err) {
-      console.error(err);
+      console.error('File upload error:', err);
+      const axiosErr = err as any;
+      if (axiosErr?.response?.data?.message) {
+        console.error('API Error:', axiosErr.response.data.message);
+      }
       return handleAxiosError(err, rejectWithValue);
     }
   }
