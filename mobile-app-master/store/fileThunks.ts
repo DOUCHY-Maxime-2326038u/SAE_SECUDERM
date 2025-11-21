@@ -2,6 +2,35 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import { api } from '@/services/api';
 import { handleAxiosError } from './errors';
 
+// Helper function to detect MIME type from file extension
+const getMimeType = (filename: string): string => {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  const mimeTypes: { [key: string]: string } = {
+    // Images
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'gif': 'image/gif',
+    'webp': 'image/webp',
+    'bmp': 'image/bmp',
+    'svg': 'image/svg+xml',
+    // Videos
+    'mp4': 'video/mp4',
+    'mov': 'video/quicktime',
+    'avi': 'video/x-msvideo',
+    'mkv': 'video/x-matroska',
+    'webm': 'video/webm',
+    'flv': 'video/x-flv',
+    '3gp': 'video/3gpp',
+    'm4v': 'video/x-m4v',
+    // Documents
+    'pdf': 'application/pdf',
+    'doc': 'application/msword',
+    'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  };
+  return mimeTypes[ext || ''] || 'application/octet-stream';
+};
+
 export const uploadFile = createAsyncThunk(
   'file/uploadFile',
   async (
@@ -10,11 +39,13 @@ export const uploadFile = createAsyncThunk(
   ) => {
     try {
       const formData = new FormData();
+      const filename = file.split('/').pop() || 'uploaded_file';
+      const mimeType = getMimeType(filename);
 
       formData.append('file', {
         uri: file,
-        name: file.split('/').pop() || 'uploaded_file',
-        type: 'application/octet-stream',
+        name: filename,
+        type: mimeType,
       } as any);
 
       formData.append('treatment_place_id', treatmentPlaceId);
