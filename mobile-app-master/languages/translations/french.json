@@ -211,6 +211,8 @@
 
   "indexBandages": {
     "noBandages": "Aucun pansements",
+    "noBandagesFound": "Aucun pansement trouvé",
+    "searchPlaceholder": "Chercher un pansement...",
     "refreshBtn": "Rafraichir"
   },
 

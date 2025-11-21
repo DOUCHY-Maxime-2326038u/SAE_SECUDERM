@@ -211,6 +211,8 @@
 
   "indexBandages": {
     "noBandages": "No Bandages",
+    "noBandagesFound": "No bandages found",
+    "searchPlaceholder": "Search a bandage...",
     "refreshBtn": "Refresh"
   },
 
